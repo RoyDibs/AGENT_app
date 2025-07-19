@@ -3,12 +3,12 @@ streamlit
 langchain
 langchain-openai
 langgraph
+langchain-community>=0.0.30
 faiss-cpu
 python-docx
-docling
 llama-index-readers-docling
-pydantic
 openai
+pydantic
 
 # Optional: Visualization
 graphviz
