@@ -1,8 +1,9 @@
+import streamlit as st
 import os
 
 # Environment
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
 # Document paths
 project_root = os.path.dirname(os.path.abspath(__file__))
