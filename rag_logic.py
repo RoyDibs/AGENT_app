@@ -34,9 +34,13 @@ def tool_check(state: GraphState) -> dict:
 def select_pdf_from_question(state: GraphState) -> dict:
     question = state["question"]
     pdf_prompt = (
-        f"Available documents:\n{chr(10).join(pdf_library.keys())}\n\n"
+        "You are an AI assistant tasked with selecting the most relevant document "
+        "from the following list based on the user's question.\n\n"
+        f"Available documents:\n{chr(10).join(list(pdf_library.keys()))}\n\n"
         f"User's question:\n{question}\n\n"
-        "Which document best matches the user's question? Respond with exact document name."
+        "Which document best matches the user's question? "
+        "Respond with the exact document name (not filename)."
+        "if reselect the document from rewrite_question, please choose another document to answer."
     )
     response = llm.invoke(pdf_prompt)
     selected_name = response.content.strip().lower()
@@ -62,9 +66,11 @@ class GradeDocuments(BaseModel):
 
 def grade_documents(state: GraphState) -> Literal["generate_answer", "rewrite_question"]:
     prompt = (
-        f"Document:\n\n{state['context']}\n\n"
-        f"User question:\n{state['question']}\n\n"
-        "Is the document relevant? Respond with 'yes' or 'no'."
+        "You are a grader assessing relevance of a retrieved document to a user question. \n "
+        "Here is the retrieved document: \n\n {context} \n\n"
+        "Here is the user question: {question} \n"
+        "If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant. \n"
+        "Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question."
     )
     grader = llm.with_structured_output(GradeDocuments)
     response = grader.invoke(prompt)
@@ -72,17 +78,24 @@ def grade_documents(state: GraphState) -> Literal["generate_answer", "rewrite_qu
 
 def rewrite_question(state: GraphState) -> dict:
     prompt = (
-        "Rewrite the following question to be clearer:\n"
-        f"{state['question']}"
+        "Look at the input and try to reason about the underlying semantic intent / meaning.\n"
+    "Here is the initial question:"
+    "\n ------- \n"
+    "{question}"
+    "\n ------- \n"
+    "Formulate an improved question:"
     )
     response = llm.invoke([{"role": "user", "content": prompt}])
     return {"question": response.content}
 
 def generate_answer(state: GraphState) -> dict:
     prompt = (
-        f"Use the context below to answer the question.\n"
-        f"Context:\n{state['context']}\n\n"
-        f"Question:\n{state['question']}"
+        "You are an assistant for question-answering tasks. "
+    "Use the following pieces of retrieved context to answer the question. "
+    "If you don't know the answer, just say that you don't know. "
+    "Use three sentences maximum and keep the answer concise.\n"
+    "Question: {question} \n"
+    "Context: {context}"
     )
     response = llm.invoke([{"role": "user", "content": prompt}])
     return {"messages": [response]}
