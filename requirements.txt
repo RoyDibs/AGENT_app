@@ -1,0 +1,14 @@
+# Core logic
+streamlit
+langchain
+langchain-openai
+langgraph
+faiss-cpu
+python-docx
+docling
+llama-index-readers-docling
+pydantic
+openai
+
+# Optional: Visualization
+graphviz
