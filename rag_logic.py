@@ -98,6 +98,7 @@ def generate_answer(state: GraphState) -> dict:
         "You are a helpful assistant. Use the following pieces of retrieved context to answer the question. "
         "If you don't know the answer, just say that you don't know. "
         "Keep the answer concise and use at most three sentences."
+        "Generate the latex mathematical format into expression and give answer."
     )
 
     user_prompt = (
