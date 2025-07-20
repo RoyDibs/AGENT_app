@@ -4,7 +4,7 @@ from typing import TypedDict, List, Optional, Literal
 
 from langchain.chat_models import init_chat_model
 from langchain_core.documents import Document
-from langchain_core.messages import HumanMessage, BaseMessage
+from langchain_core.messages import HumanMessage, BaseMessage, SystemMessage
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from llama_index.readers.docling import DoclingReader
@@ -66,38 +66,49 @@ class GradeDocuments(BaseModel):
 
 def grade_documents(state: GraphState) -> Literal["generate_answer", "rewrite_question"]:
     prompt = (
-        "You are a grader assessing relevance of a retrieved document to a user question. \n "
+        "You are a grader assessing relevance of a retrieved document to a user question.\n "
         "Here is the retrieved document: \n\n {context} \n\n"
         "Here is the user question: {question} \n"
-        "If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant. \n"
+        "If the document contains keyword(s) or semantic meaning related to the user question, grade it as relevant.\n"
         "Give a binary score 'yes' or 'no' score to indicate whether the document is relevant to the question."
     )
+    grading_prompt = prompt.format(question=state["question"], context=state["context"])
     grader = llm.with_structured_output(GradeDocuments)
-    response = grader.invoke(prompt)
+    response = grader.invoke(grading_prompt)
     return "generate_answer" if response.binary_score == "yes" else "rewrite_question"
 
 def rewrite_question(state: GraphState) -> dict:
+    question = state["question"]
     prompt = (
         "Look at the input and try to reason about the underlying semantic intent / meaning.\n"
-    "Here is the initial question:"
-    "\n ------- \n"
-    "{question}"
-    "\n ------- \n"
-    "Formulate an improved question:"
+        "Here is the initial question:\n"
+        "-------\n"
+        f"{question}\n"
+        "-------\n"
+        "Formulate an improved question:"
     )
     response = llm.invoke([{"role": "user", "content": prompt}])
     return {"question": response.content}
 
 def generate_answer(state: GraphState) -> dict:
-    prompt = (
-        "You are an assistant for question-answering tasks. "
-    "Use the following pieces of retrieved context to answer the question. "
-    "If you don't know the answer, just say that you don't know. "
-    "Use three sentences maximum and keep the answer concise.\n"
-    "Question: {question} \n"
-    "Context: {context}"
+    question = state["question"]
+    context = state["context"]
+
+    system_prompt = (
+        "You are a helpful assistant. Use the following pieces of retrieved context to answer the question. "
+        "If you don't know the answer, just say that you don't know. "
+        "Keep the answer concise and use at most three sentences."
     )
-    response = llm.invoke([{"role": "user", "content": prompt}])
+
+    user_prompt = (
+        f"Question: {question}\n"
+        f"Context: {context}"
+    )
+
+    response = llm.invoke([
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=user_prompt)
+    ])
     return {"messages": [response]}
 
 # Graph assembly
