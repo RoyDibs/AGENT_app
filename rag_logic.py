@@ -109,11 +109,10 @@ def generate_answer(state: GraphState) -> dict:
     context = state["context"]
 
     gen_prompt = (
-        "You are a helpful assistant. Use the following pieces of retrieved context to answer the question. "
+        "You are an assistant for question-answering tasks. "
+    "Use the following pieces of retrieved context to answer the question. "
     "If you don't know the answer, just say that you don't know. "
-    "Keep the answer concise and use at most three sentences. "
-    "If you include equations, format them using LaTeX so they can be rendered with MathJax. "
-    "Keep the answer concise, and use LaTeX-style formatting with \\(inline\\) or $$display$$ math when needed."
+    "Use three sentences maximum and keep the answer concise.\n"
     "Question: {question} \n"
     "Context: {context}"
     )
