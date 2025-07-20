@@ -50,6 +50,7 @@ def select_pdf_from_question(state: GraphState) -> dict:
 def retrieve_and_answer_node(state: GraphState) -> dict:
     question = state["question"]
     selected_file = state["selected_file"]
+
     reader = DoclingReader()
     docs = reader.load_data(str(Path(selected_file).resolve()))
     doc_splits = [Document(page_content=node.text, metadata=node.metadata) for node in docs]
@@ -59,7 +60,20 @@ def retrieve_and_answer_node(state: GraphState) -> dict:
     retriever = vectorstore.as_retriever(search_type='similarity', search_kwargs={'k': 3})
     retrieved_docs = retriever.invoke(question)
     context = "\n\n---\n\n".join([doc.page_content for doc in retrieved_docs])
-    return {"context": context}
+
+    # inline generation here like in CLI
+    system_prompt = (
+        "You are a helpful assistant. Use the following pieces of retrieved context to answer the user's question. "
+        "If you don't know the answer from the context provided, just say that you don't know. "
+        "Keep the answer concise and directly address the question.\n\n"
+        "CONTEXT:\n{context}\n\n"
+        "USER QUESTION: {question}"
+    )
+    prompt = system_prompt.format(context=context, question=question)
+    response = llm.invoke([HumanMessage(content=prompt)])
+
+    return {"context": context, "messages": [response]}
+
 
 class GradeDocuments(BaseModel):
     binary_score: Literal['yes', 'no'] = Field(...)
@@ -94,11 +108,13 @@ def generate_answer(state: GraphState) -> dict:
     question = state["question"]
     context = state["context"]
 
-    system_prompt = (
-        "You are a helpful assistant. Use the following pieces of retrieved context to answer the question. "
-        "If you don't know the answer, just say that you don't know. "
-        "Keep the answer concise and use at most three sentences."
-        "Generate the latex mathematical format into expression and give answer."
+    gen_prompt = (
+        "You are an assistant for question-answering tasks. "
+    "Use the following pieces of retrieved context to answer the question. "
+    "If you don't know the answer, just say that you don't know. "
+    "Use three sentences maximum and keep the answer concise.\n"
+    "Question: {question} \n"
+    "Context: {context}"
     )
 
     user_prompt = (
@@ -107,7 +123,7 @@ def generate_answer(state: GraphState) -> dict:
     )
 
     response = llm.invoke([
-        SystemMessage(content=system_prompt),
+        SystemMessage(content=gen_prompt),
         HumanMessage(content=user_prompt)
     ])
     return {"messages": [response]}
