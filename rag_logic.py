@@ -112,8 +112,8 @@ def generate_answer(state: GraphState) -> dict:
         "You are a helpful assistant. Use the following pieces of retrieved context to answer the question. "
     "If you don't know the answer, just say that you don't know. "
     "Keep the answer concise and use at most three sentences. "
-    "When expressing mathematical results, write them in clear, human-readable math format, using symbols like ∫, ∑, π, √, and fractions like 1/2 instead of LaTeX."
-        
+    "If you include equations, format them using LaTeX so they can be rendered with MathJax. "
+    "Keep the answer concise, and use LaTeX-style formatting with \\(inline\\) or $$display$$ math when needed."
     "Question: {question} \n"
     "Context: {context}"
     )
