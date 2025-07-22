@@ -18,7 +18,7 @@ from utils import greeting_tool
 
 DEBUG = False
 
-llm = init_chat_model("openai:gpt-4o-mini", temperature=0)
+llm = init_chat_model("openai:gpt-4.1", temperature=0)
 llm_with_tools = llm.bind_tools([greeting_tool])
 
 class GraphState(TypedDict):
